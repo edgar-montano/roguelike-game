@@ -24,6 +24,27 @@ color_dark_wall     = libtcod.Color(0,0,100)
 color_dark_ground   = libtcod.Color(50,50,100)
 ##############################################
 
+#######Tile CLASS DEFINITION##################
+# TODO: add support for Tiles that inflict damage
+
+
+class Tile:
+    """
+    Tile class for map creation
+    """
+    def __init__(self, blocked, block_sight=None):
+        """
+        Creates a tile, and uses a blocked flag to determine
+        if the tile is passable. By default block_sight is set to
+        None meaning field of vision is blocked, and blocked is set to false 
+        """
+        self.blocked = blocked
+        # if tile is blocked so is the sight
+        if block_sight is None:
+            block_sight = blocked
+        self.block_sight = block_sight
+###############################################
+
 #######OBJECT CLASS DEFINITIONS################
 class Object:
     """
@@ -47,7 +68,11 @@ class Object:
         Moves the object based on a predefined input:
         negative values denote for a change in opposite direction.
         """
-        if not map[self.x +dx][self.y+dy].blocked:
+        if not map[self.x + dx][self.y + dy].blocked:
+            print("Location: (%d,%d) is blocked: %s" %
+                  (self.x+dx, self.y+dy, map[self.x + dx][self.y + dy].blocked))
+            print("\t block_sight is: %s " %
+                  map[self.x + dx][self.y + dy].block_sight)
             self.x+=dx
             self.y+=dy 
     def draw(self):
@@ -63,26 +88,28 @@ class Object:
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
 ##############################################
 
-#######Tile CLASS DEFINITION##################
-# TODO: add support for Tiles that inflict damage
-class Tile:  
-    """
-    Tile class for map creation
-    """
-    def __init__(self,blocked,block_sight = None):
-        """
-        Creates a tile, and uses a blocked flag to determine
-        if the tile is passable. By default block_sight is set to
-        None meaning field of vision is blocked, and blocked is set to false 
-        """
-        self.blocked=blocked
-        # if tile is blocked so is the sight 
-        if block_sight is None: 
-            block_sight = blocked
-        self.block_sight=block_sight
-###############################################
-
 ###############FUNCTIONS######################
+def make_map():
+    """
+    Simple map generating algorithm that used a nest list comprehension 
+    to generate a multi-dimensional array of Tiles. 
+    """
+    global map
+    # fill map with unblocked tiles, these are ground tiles
+    # [note: list comprenhsion must call Tile using a parameter in constructor
+    # otherwise it will result in referring to the same floor instead of
+    # creating a new tile object!]
+    map = [[Tile(False)
+            for y in range(MAP_HEIGHT)]
+           for x in range(MAP_WIDTH)]
+
+    #static walls used for debugging purposes
+    map[30][22].blocked = True
+    map[30][22].block_sight = True
+    map[50][22].blocked = True 
+    map[50][22].block_sight = True
+
+
 # TODO: Add support for directional movement
 # and add support for num pad movement along with vi keys
 def handle_keys():
@@ -111,27 +138,6 @@ def handle_keys():
     elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
         player.move(1,0)
     print("(%d,%d)" % (player.x,player.y))
-
-
-def make_map():
-    """
-    Simple map generating algorithm that used a nest list comprehension 
-    to generate a multi-dimensional array of Tiles. 
-    """
-    global map
-    # fill map with unblocked tiles, these are ground tiles
-    # [note: list comprenhsion must call Tile using a parameter in constructor
-    # otherwise it will result in referring to the same floor instead of
-    # creating a new tile object!]
-    map = [[ Tile(False)
-        for y in range(MAP_HEIGHT)]
-            for x in range(MAP_WIDTH)]
-    
-    #static walls used for debugging purposes
-    map[30][22].blocked=True
-    map[30][20].block_sight=True
-    map[50][22].blocked = True
-    map[50][20].block_sight = True
 
 def render_all():
     # global color_light_wall
