@@ -67,10 +67,10 @@ class Object:
         negative values denote for a change in opposite direction.
         """
         if not map[self.x + dx][self.y + dy].blocked:
-            print("Location: (%d,%d) is blocked: %s" %
-                  (self.x+dx, self.y+dy, map[self.x + dx][self.y + dy].blocked))
-            print("\t block_sight is: %s " %
-                  map[self.x + dx][self.y + dy].block_sight)
+            # print("Location: (%d,%d) is blocked: %s" %
+            #       (self.x+dx, self.y+dy, map[self.x + dx][self.y + dy].blocked))
+            # print("\t block_sight is: %s " %
+            #       map[self.x + dx][self.y + dy].block_sight)
             self.x+=dx
             self.y+=dy 
     def draw(self):
@@ -135,17 +135,14 @@ def handle_keys():
         player.move(-1,0)
     elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
         player.move(1,0)
-    print("(%d,%d)" % (player.x,player.y))
+    #print("(%d,%d)" % (player.x,player.y))
 
 def render_all():
-   """
-   Renders all objects to the displays.
-   """
-
-    # set wall color  if wall
-    # otherwise set ground color
+    """
+    Renders all objects to the displays.   
+    """
     for y in range(MAP_HEIGHT):
-        for x in range(MAP_WIDTH):
+        for x in range(MAP_WIDTH): 
             wall = map[x][y].block_sight
             if wall: 
                 libtcod.console_set_char_background(con,x,y,color_dark_wall,libtcod.BKGND_SET)
