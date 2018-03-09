@@ -26,8 +26,6 @@ color_dark_ground   = libtcod.Color(50,50,100)
 
 #######Tile CLASS DEFINITION##################
 # TODO: add support for Tiles that inflict damage
-
-
 class Tile:
     """
     Tile class for map creation
@@ -140,9 +138,12 @@ def handle_keys():
     print("(%d,%d)" % (player.x,player.y))
 
 def render_all():
-    # global color_light_wall
-    # global color_light_ground
+   """
+   Renders all objects to the displays.
+   """
 
+    # set wall color  if wall
+    # otherwise set ground color
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
             wall = map[x][y].block_sight
@@ -154,6 +155,7 @@ def render_all():
     for object in objects:
         object.draw()
     
+    # blit render onto screen
     libtcod.console_blit(con,0,0,SCREEN_WIDTH,SCREEN_HEIGHT,0,0,0)
 
 ##############################################
@@ -178,6 +180,7 @@ player = Object(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, '@', libtcod.white)
 npc = Object(SCREEN_WIDTH/2-5, SCREEN_HEIGHT/2, 'd', libtcod.yellow)
 objects = [npc, player]
 
+#generates map 
 make_map()
 ##############################################
 
