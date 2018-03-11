@@ -41,6 +41,26 @@ class Tile:
         if block_sight is None:
             block_sight = blocked
         self.block_sight = block_sight
+    
+    def setBlocked(self,blocked_flag=True):
+        """
+        Set tile tile block, sets the tile as blocked and
+        sets the block_sight flag. Default parameter is a boolean set to True,
+        meaning by default setBlocked() sets  the values to blocked. 
+        """
+        self.blocked=blocked_flag
+        self.block_sight=blocked_flag
+
+class Rect:
+    """
+    Helper class used in the process of room creation 
+    """
+    def __init__(self,x,y,w,h):
+        self.x1=x
+        self.y1=y
+        self.x2=x+w
+        self.y2=y+h
+        
 ###############################################
 
 #######OBJECT CLASS DEFINITIONS################
@@ -93,19 +113,29 @@ def make_map():
     to generate a multi-dimensional array of Tiles. 
     """
     global map
-    # fill map with unblocked tiles, these are ground tiles
+    # fill map with blocked tiles, then use create room to generate rooms
     # [note: list comprenhsion must call Tile using a parameter in constructor
     # otherwise it will result in referring to the same floor instead of
     # creating a new tile object!]
-    map = [[Tile(False)
+    map = [[Tile(True)
             for y in range(MAP_HEIGHT)]
            for x in range(MAP_WIDTH)]
 
-    #static walls used for debugging purposes
-    map[30][22].blocked = True
-    map[30][22].block_sight = True
-    map[50][22].blocked = True 
-    map[50][22].block_sight = True
+    # static walls used for debugging purposes
+    # later include procedural generation of rooms
+    room1 = Rect(20,15,10,15)
+    room2 = Rect(50, 15, 10, 15)
+    create_room(room1)
+    create_room(room2)
+
+    # connect the rooms 
+    create_htunnel(25, 55, 23)
+
+    # place player in room 
+    player.x = 25
+    player.y = 23
+
+   
 
 
 # TODO: Add support for directional movement
@@ -154,6 +184,36 @@ def render_all():
     
     # blit render onto screen
     libtcod.console_blit(con,0,0,SCREEN_WIDTH,SCREEN_HEIGHT,0,0,0)
+
+
+def create_room(room):
+    """
+    Create a room, takes in a room argument
+    """
+    global map
+    for x in range(room.x1+1, room.x2):
+        for y in range(room.y1+1, room.y2):
+            map[x][y].setBlocked(False)
+            # map[x][y].blocked = False
+            # map[x][y].block_sight = False
+
+def create_htunnel(x1,x2,y):
+    """
+    Create a horizontal tunnel 
+    """
+    global map
+    # if x1 < x2, x1 will be the minimum of both, and x2 the maximum
+    for x in range(min(x1,x2), max(x1,x2)+1):
+        map[x][y].setBlocked(False)
+
+def create_vtunnel(y1,y2,x):
+    """
+    Create a vertical tunnel
+    """
+    global map
+    for x in range(min(y1,y2), max(y1,y2)+1):
+        map[x][y].setBlocked(False)
+    
 
 ##############################################
 
