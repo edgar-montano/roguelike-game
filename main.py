@@ -50,6 +50,7 @@ class Tile:
         None meaning field of vision is blocked, and blocked is set to false 
         """
         self.blocked = blocked
+        self.explored = False
         # if tile is blocked so is the sight
         if block_sight is None:
             block_sight = blocked
@@ -271,11 +272,12 @@ def render_all():
         for x in range(MAP_WIDTH): 
             visible = libtcod.map_is_in_fov(fov_map,x,y)
             wall = map[x][y].block_sight
-            if not visible:  
-                if wall: 
-                    libtcod.console_set_char_background(con,x,y,color_dark_wall,libtcod.BKGND_SET)
-                else:
-                    libtcod.console_set_char_background(con,x,y,color_dark_ground,libtcod.BKGND_SET)
+            if not visible: 
+                if map[x][y].explored: 
+                    if wall: 
+                        libtcod.console_set_char_background(con,x,y,color_dark_wall,libtcod.BKGND_SET)
+                    else:
+                        libtcod.console_set_char_background(con,x,y,color_dark_ground,libtcod.BKGND_SET)
             # this is the case where the wall is visible
             else:
                 if wall:
@@ -285,6 +287,7 @@ def render_all():
                     # the case where its a ground tile
                     libtcod.console_set_char_background(
                         con, x, y, color_light_ground, libtcod.BKGND_SET)
+                map[x][y].explored=True
                     
     #draw all objects on screen
     for object in objects:
