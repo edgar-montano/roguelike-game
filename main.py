@@ -20,13 +20,21 @@ ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
 
+# Constants used for Field of View
+FOV_ALGO = 0 # default FOV Algorithm
+FOV_LIGHT_WALLS = True
+TORCH_RADIUS = 10 
+
+# Miscallaneous constants
 LIMIT_FPS           = 20      #20 frames-per-second maximum
 FULLSCREEN          = False  #fullscreen on startup
 #String constants
 TITLE               = 'PyRL'
 # Color constants
 color_dark_wall     = libtcod.Color(0,0,100)
-color_dark_ground   = libtcod.Color(50,50,100)
+color_light_wall   = libtcod.Color(130,110,50)
+color_dark_ground   = libtcod.Color(50,50,150)
+color_light_ground  = libtcod.Color(200,180,50)
 ##############################################
 
 #######Tile CLASS DEFINITION##################
@@ -117,8 +125,9 @@ class Object:
         """
         Sets the color and then draws the character represented by the positional values.
         """
-        libtcod.console_set_default_foreground(con,self.color)
-        libtcod.console_put_char(con,self.x,self.y,self.char,libtcod.BKGND_NONE)
+        if libtcod.map_is_in_fov(fov_map,self.x,self.y):
+            libtcod.console_set_default_foreground(con,self.color)
+            libtcod.console_put_char(con,self.x,self.y,self.char,libtcod.BKGND_NONE)
     def clear(self):
         """
         Erases the character
@@ -220,6 +229,8 @@ def handle_keys():
     console_wait_for_keypress blocks all actions until the player
     makes a move. 
     """
+
+    global fov_recompute
     #blocks the game and awaits input
     key = libtcod.console_wait_for_keypress(True)
     
@@ -233,25 +244,48 @@ def handle_keys():
     #handle player movement
     if libtcod.console_is_key_pressed(libtcod.KEY_UP):
         player.move(0,-1)
+        fov_recompute = True
     elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):
         player.move(0,1)
+        fov_recompute = True
     elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT):
         player.move(-1,0)
+        fov_recompute = True
     elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
         player.move(1,0)
+        fov_recompute = True
     #print("(%d,%d)" % (player.x,player.y))
 
 def render_all():
     """
     Renders all objects to the displays.   
     """
+    global fov_recompute, fov_map
+
+    if fov_recompute:
+        # recmpute fov when needed 
+        libtcod.map_compute_fov(fov_map, player.x, player.y,TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+        fov_recompute = False 
+
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH): 
+            visible = libtcod.map_is_in_fov(fov_map,x,y)
             wall = map[x][y].block_sight
-            if wall: 
-                libtcod.console_set_char_background(con,x,y,color_dark_wall,libtcod.BKGND_SET)
+            if not visible:  
+                if wall: 
+                    libtcod.console_set_char_background(con,x,y,color_dark_wall,libtcod.BKGND_SET)
+                else:
+                    libtcod.console_set_char_background(con,x,y,color_dark_ground,libtcod.BKGND_SET)
+            # this is the case where the wall is visible
             else:
-                libtcod.console_set_char_background(con,x,y,color_dark_ground,libtcod.BKGND_SET)
+                if wall:
+                    libtcod.console_set_char_background(
+                        con, x, y, color_light_wall, libtcod.BKGND_SET)
+                else:
+                    # the case where its a ground tile
+                    libtcod.console_set_char_background(
+                        con, x, y, color_light_ground, libtcod.BKGND_SET)
+                    
     #draw all objects on screen
     for object in objects:
         object.draw()
@@ -311,6 +345,15 @@ objects = [npc, player]
 
 #generates map 
 make_map()
+
+# generate field of view effect
+fov_map  = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
+for y in range(MAP_HEIGHT):
+    for x in range(MAP_WIDTH):
+        libtcod.map_set_properties(fov_map, x,y, not map[x][y].block_sight, not map[x][y].blocked)
+
+fov_recompute = True
+
 ##############################################
 
 # Main game loop
