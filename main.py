@@ -15,6 +15,11 @@ SCREEN_HEIGHT       = 50
 MAP_WIDTH           = 80
 MAP_HEIGHT          = 45
 
+# constants used for dungeon creation 
+ROOM_MAX_SIZE = 10
+ROOM_MIN_SIZE = 6
+MAX_ROOMS = 30
+
 LIMIT_FPS           = 20      #20 frames-per-second maximum
 FULLSCREEN          = False  #fullscreen on startup
 #String constants
@@ -60,6 +65,21 @@ class Rect:
         self.y1=y
         self.x2=x+w
         self.y2=y+h
+    def center(self):
+        """
+        Finds the center of the rectangle
+        """
+        centerX = (self.x1 + self.x2)/2
+        centerY = (self.y1 + self.y2)/2
+        return (centerX,centerY)
+    def intersect(self,other):
+        """
+        Determines if another room intersects with this one. 
+        """
+        return (self.x1 <= other.x2 and self.x2 >= other.x1 and
+                self.y1 <= other.y2 and self.y2 >= other.y1)
+        
+        
         
 ###############################################
 
@@ -121,23 +141,77 @@ def make_map():
             for y in range(MAP_HEIGHT)]
            for x in range(MAP_WIDTH)]
 
-    # static walls used for debugging purposes
-    # later include procedural generation of rooms
-    room1 = Rect(20,15,10,15)
-    room2 = Rect(50, 15, 10, 15)
-    create_room(room1)
-    create_room(room2)
+   
+    # list of all the rooms we will eventually create
+    rooms = []
+    # counter used to create rooms until we hit max amount of rooms. 
+    num_rooms = 0
 
-    # connect the rooms 
-    create_htunnel(25, 55, 23)
+  
+    # Here we are going to create x number of rooms, depending on MAX_ROOM
+    # size field. 
+    for r in range(MAX_ROOMS):
+        # Generate coordinates for the room
+        w = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+        h = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+        x = libtcod.random_get_int(0, 0, MAP_WIDTH - w - 1)
+        y = libtcod.random_get_int(0, 0, MAP_HEIGHT - h - 1)
 
-    # place player in room 
-    player.x = 25
-    player.y = 23
+        
+        
+        #generate new room with our randomized dimensions
+        new_room = Rect(x,y,w,h)
+        
+        # we'll use this flag to check if this room intersects with another 
+        invalid_room = False
+        
+        # check if this room intersects with another room
+        # if so this room is not valid 
+        for other_room in rooms:      
+            #this will break out the current loop that checks all the other rooms
+            # and then continue to try to generate a new room. 
+            if new_room.intersect(other_room):
+                invalid_room = True
+                break 
+            
+            #if the room is valid generate it 
+        if not invalid_room:
+            # generate new room
+            create_room(new_room)
+            
+            #store the center of the room 
+            (new_x,new_y)=new_room.center()
+
+            # Debug message so we can see coordinates of room centers
+            #print("Room created at %d,%d" % (new_x,new_y))
+            
+            # if this is the first room generated, set the player inside this room. 
+            if num_rooms == 0:
+                player.x=new_x
+                player.y=new_y
+            else:
+                # since the room generated is NOT the first room, we must connect 
+                # our newly generated room to another room. 
+                # first we retrieve the coordinates of the center of the previous room
+                (prev_x, prev_y) = rooms[num_rooms-1].center()
+
+                # This random number gets a either 0 or 1, this is similar to flipping a coin
+                # if the coin is heads we create the horizontal tunnel first then vertical
+                if libtcod.random_get_int(0,0,1) == 1:
+                    create_htunnel(prev_x, new_x, prev_y)
+                    create_vtunnel(prev_y, new_y, new_x)
+                else:
+                    # the coin flip is tails so we create a vertical tunnel first
+                    create_vtunnel(prev_y, new_y, prev_x)
+                    create_htunnel(prev_x, new_x, new_y)
+        
+            # at this point we can append new room to list and 
+            # increment room number counter 
+            rooms.append(new_room)
+            num_rooms+=1
+                
 
    
-
-
 # TODO: Add support for directional movement
 # and add support for num pad movement along with vi keys
 def handle_keys():
@@ -194,8 +268,6 @@ def create_room(room):
     for x in range(room.x1+1, room.x2):
         for y in range(room.y1+1, room.y2):
             map[x][y].setBlocked(False)
-            # map[x][y].blocked = False
-            # map[x][y].block_sight = False
 
 def create_htunnel(x1,x2,y):
     """
@@ -211,7 +283,7 @@ def create_vtunnel(y1,y2,x):
     Create a vertical tunnel
     """
     global map
-    for x in range(min(y1,y2), max(y1,y2)+1):
+    for y in range(min(y1,y2), max(y1,y2)+1):
         map[x][y].setBlocked(False)
     
 
