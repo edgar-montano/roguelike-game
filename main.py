@@ -23,7 +23,7 @@ MAX_ROOMS = 30
 # Constants used for Field of View
 FOV_ALGO = 0 # default FOV Algorithm
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 10 
+TORCH_RADIUS = 5
 
 # Miscallaneous constants
 LIMIT_FPS           = 20      #20 frames-per-second maximum
@@ -31,7 +31,7 @@ FULLSCREEN          = False  #fullscreen on startup
 #String constants
 TITLE               = 'PyRL'
 # Color constants
-color_dark_wall     = libtcod.Color(0,0,100)
+color_dark_wall     = libtcod.Color(0,0,0)
 color_light_wall   = libtcod.Color(130,110,50)
 color_dark_ground   = libtcod.Color(50,50,150)
 color_light_ground  = libtcod.Color(200,180,50)
