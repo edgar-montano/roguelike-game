@@ -19,6 +19,7 @@ MAP_HEIGHT          = 45
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
+MAX_ROOM_MONSTERS = 3 # TODO: Change this to rely on the depth of the level rather then constant
 
 # Constants used for Field of View
 FOV_ALGO = 0 # default FOV Algorithm
@@ -98,13 +99,15 @@ class Object:
     This is a generic object that can represent the 
     player, an npc, item, stairs, etc.
     """
-    def __init__(self,x,y,char,color):
+    def __init__(self,x,y,char,name, color,blocks=False):
         """
         Constructor that determines location of object
         character represent object, and the color of the object.
         This constructor should always be called on creating a new 
         object.
         """
+        self.name = name
+        self.blocks = blocks
         self.x= x
         self.y=y
         self.char=char
@@ -115,7 +118,8 @@ class Object:
         Moves the object based on a predefined input:
         negative values denote for a change in opposite direction.
         """
-        if not map[self.x + dx][self.y + dy].blocked:
+        # this prevents anyone from moving over a blocked object. 
+        if not is_blocked(self.x +dx, self.y +dy):
             # print("Location: (%d,%d) is blocked: %s" %
             #       (self.x+dx, self.y+dy, map[self.x + dx][self.y + dy].blocked))
             # print("\t block_sight is: %s " %
@@ -215,6 +219,9 @@ def make_map():
                     create_vtunnel(prev_y, new_y, prev_x)
                     create_htunnel(prev_x, new_x, new_y)
         
+            # generate monsters in new room
+            place_objects(new_room)
+
             # at this point we can append new room to list and 
             # increment room number counter 
             rooms.append(new_room)
@@ -323,6 +330,45 @@ def create_vtunnel(y1,y2,x):
     for y in range(min(y1,y2), max(y1,y2)+1):
         map[x][y].setBlocked(False)
     
+def place_objects(room):
+    """
+    Places objects within the specified room. 
+    TODO: Add generic support for which objects.
+    """
+    # Init a random number of monsters in the room from 0 to MAX_ROOM_MONSTERS (3)
+    num_monsters = libtcod.random_get_int(0,0,MAX_ROOM_MONSTERS)
+
+    for i in range(num_monsters):
+        x = libtcod.random_get_int(0,room.x1,room.x2)
+        y = libtcod.random_get_int(0,room.y1,room.y2)
+        
+        if not is_blocked(x,y):
+            # the likely hood of this is 80% 
+            if libtcod.random_get_int(0,0,100) < 80:
+                # creates an orc object monster
+                monster = Object(x,y,'o','orc',libtcod.desaturated_green,blocks=True)
+            else:
+                # create a troll
+                monster = Object(x, y, 'T','troll', libtcod.darker_green,blocks=True)
+        
+            #append monsters generated to list
+            objects.append(monster)
+
+            
+def is_blocked(x,y):
+    """
+    Tests to see if a tile is blocked
+    """
+    # if the tile is blocked by wall or somethign else then return true
+    if map[x][y].blocked: 
+        return True
+    # Check for any other blocking objects
+    for object in objects:
+        if object.blocks and object.x == x and object.y == y:
+            return True
+    # if no other objects blocking found return false
+    return False
+
 
 ##############################################
 
@@ -342,9 +388,8 @@ con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 # Initializes the player object, an npc object, then creates
 # a list of all objects to iterate through
 # makes updating all objects easier.
-player = Object(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, '@', libtcod.white)
-npc = Object(SCREEN_WIDTH/2-5, SCREEN_HEIGHT/2, 'd', libtcod.yellow)
-objects = [npc, player]
+player = Object(0,0,'@','player',libtcod.white,blocks=True)
+objects = [player]
 
 #generates map 
 make_map()
