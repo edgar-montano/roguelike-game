@@ -253,13 +253,13 @@ def handle_keys():
     if game_state == 'playing':
         #handle player movement
         if libtcod.console_is_key_pressed(libtcod.KEY_UP):
-            player.move_or_attack(0,-1)
+            player_move_or_attack(0,-1)
         elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):
-            player.move_or_attack(0, 1)
+            player_move_or_attack(0, 1)
         elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT):
-            player.move_or_attack(-1,0)
+            player_move_or_attack(-1,0)
         elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
-            player.move_or_attack(1,0)
+            player_move_or_attack(1,0)
         else:
             return 'didnt-take-turn'
         #print("(%d,%d)" % (player.x,player.y))
