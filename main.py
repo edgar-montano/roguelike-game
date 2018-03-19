@@ -15,6 +15,7 @@ SCREEN_HEIGHT       = 50
 MAP_WIDTH           = 80
 MAP_HEIGHT          = 45
 
+
 # constants used for dungeon creation 
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
@@ -247,22 +248,21 @@ def handle_keys():
     if key.vk == libtcod.KEY_ENTER and key.lalt:
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
     elif key.vk == libtcod.KEY_ESCAPE:
-        return True
+        return 'exit'
     
-    #handle player movement
-    if libtcod.console_is_key_pressed(libtcod.KEY_UP):
-        player.move(0,-1)
-        fov_recompute = True
-    elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):
-        player.move(0,1)
-        fov_recompute = True
-    elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT):
-        player.move(-1,0)
-        fov_recompute = True
-    elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
-        player.move(1,0)
-        fov_recompute = True
-    #print("(%d,%d)" % (player.x,player.y))
+    if game_state == 'playing':
+        #handle player movement
+        if libtcod.console_is_key_pressed(libtcod.KEY_UP):
+            player.move_or_attack(0,-1)
+        elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):
+            player.move_or_attack(0, 1)
+        elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT):
+            player.move_or_attack(-1,0)
+        elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
+            player.move_or_attack(1,0)
+        else:
+            return 'didnt-take-turn'
+        #print("(%d,%d)" % (player.x,player.y))
 
 def render_all():
     """
@@ -369,6 +369,29 @@ def is_blocked(x,y):
     # if no other objects blocking found return false
     return False
 
+def player_move_or_attack(dx,dy):
+    """
+    Moves the player, if an object is in the way, it opts to attack.
+    Replaces manually setting fov_recompute
+    """
+    global fov_recompute
+
+    # the coordinates the player is moving 
+    x = player.x + dx
+    y = player.y + dy
+
+    # try to find an attackable object
+    target = None
+    for object in objects:
+        if object.x == x and object.y == y:
+            target = object
+            break
+    if target is not None:
+        print("The %s laughs at your punny efforts to attack him!" % target.name )
+    else:
+        player.move(dx,dy)
+        fov_recompute = True
+
 
 ##############################################
 
@@ -401,6 +424,8 @@ for y in range(MAP_HEIGHT):
         libtcod.map_set_properties(fov_map, x,y, not map[x][y].block_sight, not map[x][y].blocked)
 
 fov_recompute = True
+game_state = 'playing'
+player_action = None
 
 ##############################################
 
@@ -423,6 +448,13 @@ while not libtcod.console_is_window_closed():
 
     #determine whether exit has been called, otherwise move character
     #the reason we call handle keys last is because it initiates the start of the next turn
-    exit = handle_keys()
-    if exit:
+    player_action = handle_keys()
+    if player_action == 'exit':
         break
+    
+    # Let enemies take their turn
+    if game_state == 'playing' and player_action != 'didnt-take-turn':
+        for object in objects:
+            if object != player:
+                print("The %s growls!" % object.name)
+    
